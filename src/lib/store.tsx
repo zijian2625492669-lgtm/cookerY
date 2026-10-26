@@ -15,11 +15,18 @@ type Store = {
 const Ctx = createContext<Store>(null as unknown as Store)
 const KEY = 'cookery.recipes.v2'
 const UKEY = 'cookery.user'
+const SEEN = 'cookery.seeds.seen'
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
     const raw = localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as Recipe[]).map(normalize) : MOCK
+    const seen: string[] = JSON.parse(localStorage.getItem(SEEN) ?? '[]')
+    localStorage.setItem(SEEN, JSON.stringify(MOCK.map((m) => m.id)))
+    if (!raw) return MOCK
+    // 原型阶段：新录入的示例菜谱自动并进已有数据（删过的不再出现）
+    const list = (JSON.parse(raw) as Recipe[]).map(normalize)
+    const fresh = MOCK.filter((m) => !seen.includes(m.id) && !list.some((x) => x.id === m.id))
+    return [...fresh, ...list]
   })
   const [user, setUser] = useState<string | null>(() => localStorage.getItem(UKEY))
 
