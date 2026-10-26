@@ -70,7 +70,7 @@ export default function Edit() {
       />
 
       <button className="cover-pick" onClick={() => set('palette', (r.palette + 1) % PALETTE_COUNT)}>
-        <Cover emoji={r.emoji} palette={r.palette} size="hero" />
+        <Cover emoji={r.emoji} palette={r.palette} photo={r.photo} size="hero" />
         <span className="cover-hint">点一下换颜色 · 之后可上传照片</span>
       </button>
       <div className="emoji-row">
