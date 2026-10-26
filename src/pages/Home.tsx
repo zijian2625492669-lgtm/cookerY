@@ -22,7 +22,7 @@ export default function Home() {
     return recipes.filter(
       (r) =>
         (!tag || r.tags.includes(tag)) &&
-        (!k || r.title.includes(k) || r.ingredients.some((i) => i.name.includes(k))),
+        (!k || r.title.includes(k) || [...r.ingredients, ...r.seasonings, ...r.sauce].some((i) => i.name.includes(k))),
     )
   }, [recipes, q, tag])
 
