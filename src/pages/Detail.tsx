@@ -61,7 +61,7 @@ export default function Detail() {
         right={<Link to={`/r/${r.id}/edit`} className="icon-btn" aria-label="编辑"><EditIcon /></Link>}
       />
       <div className="hero">
-        <Cover emoji={r.emoji} palette={r.palette} size="hero" />
+        <Cover emoji={r.emoji} palette={r.palette} photo={r.photo} size="hero" />
       </div>
 
       <section className="sheet">
