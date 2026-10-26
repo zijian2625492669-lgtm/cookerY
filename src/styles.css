@@ -207,3 +207,8 @@ input:focus, textarea:focus { border-color: var(--tomato); box-shadow: 0 0 0 3px
 .phase.hot { background: var(--tomato-soft); color: var(--tomato); }
 .phase + .cook-no { margin-top: 8px; }
 .cook-extra { margin: 16px 0 0; font-size: 16px; color: var(--muted); background: var(--card); border: 1px dashed var(--line); border-radius: var(--r-md); padding: 10px 14px; line-height: 1.6; }
+
+/* 成品照片封面 */
+.cover.has-photo { background: var(--line); }
+.cover.has-photo::after { display: none; }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
