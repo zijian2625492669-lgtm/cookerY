@@ -2,32 +2,66 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { Cover } from '../components/Cover'
+import { TopBar, BackIcon, EditIcon } from '../components/TopBar'
+import type { Ingredient } from '../lib/types'
 
 export default function Detail() {
   const { id } = useParams()
   const nav = useNavigate()
   const { recipes, remove } = useStore()
   const r = recipes.find((x) => x.id === id)
-  const [done, setDone] = useState<Set<number>>(new Set())
+  const [done, setDone] = useState<Set<string>>(new Set())
   if (!r) return <main className="page"><p>找不到这道菜</p></main>
 
-  const toggle = (i: number) =>
+  const toggle = (k: string) =>
     setDone((s) => {
       const n = new Set(s)
-      n.has(i) ? n.delete(i) : n.add(i)
+      n.has(k) ? n.delete(k) : n.add(k)
       return n
     })
 
+  const Checklist = ({ list, k }: { list: Ingredient[]; k: string }) => (
+    <ul className="ingredients">
+      {list.map((g, i) => (
+        <li key={i} className={done.has(k + i) ? 'checked' : ''} onClick={() => toggle(k + i)}>
+          <span className="check" />
+          <span className="ing-name">{g.name}</span>
+          <span className="ing-amt">{g.amount}{g.unit}</span>
+        </li>
+      ))}
+    </ul>
+  )
+
+  const Steps = ({ list, k, tone }: { list: string[]; k: string; tone?: 'herb' }) => (
+    <ol className={`steps ${tone ?? ''}`}>
+      {list.map((s, i) => (
+        <li key={i} className={done.has(k + i) ? 'checked' : ''} onClick={() => toggle(k + i)}>
+          <span className="step-no serif">{i + 1}</span>
+          <p>{s}</p>
+        </li>
+      ))}
+    </ol>
+  )
+
+  // 只显示有内容的段落
+  const sections = [
+    { id: 'ing', name: '食材', show: r.ingredients.length > 0 },
+    { id: 'sea', name: '调料', show: r.seasonings.length > 0 },
+    { id: 'sau', name: '酱料', show: r.sauce.length > 0 },
+    { id: 'pre', name: '备菜', show: r.prep.length > 0 },
+    { id: 'cook', name: '开做', show: r.steps.length > 0 },
+  ].filter((s) => s.show)
+  const no = (sid: string) => sections.findIndex((s) => s.id === sid) + 1
+  const jump = (sid: string) => document.getElementById(sid)?.scrollIntoView({ behavior: 'smooth' })
+
   return (
     <main className="detail">
+      <TopBar
+        left={<button className="icon-btn" onClick={() => nav(-1)} aria-label="返回"><BackIcon /></button>}
+        right={<Link to={`/r/${r.id}/edit`} className="icon-btn" aria-label="编辑"><EditIcon /></Link>}
+      />
       <div className="hero">
         <Cover emoji={r.emoji} palette={r.palette} size="hero" />
-        <button className="icon-btn hero-back" onClick={() => nav(-1)} aria-label="返回">
-          <svg viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" /></svg>
-        </button>
-        <Link to={`/r/${r.id}/edit`} className="icon-btn hero-edit" aria-label="编辑">
-          <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>
-        </Link>
       </div>
 
       <section className="sheet">
@@ -40,26 +74,42 @@ export default function Detail() {
         </div>
         <div className="tags">{r.tags.map((t) => <span key={t} className="tag">#{t}</span>)}</div>
 
-        <h2 className="serif section">食材</h2>
-        <ul className="ingredients">
-          {r.ingredients.map((g, i) => (
-            <li key={i} className={done.has(i) ? 'checked' : ''} onClick={() => toggle(i)}>
-              <span className="check" />
-              <span className="ing-name">{g.name}</span>
-              <span className="ing-amt">{g.amount}{g.unit}</span>
-            </li>
+        <nav className="flow">
+          {sections.map((s, i) => (
+            <button key={s.id} onClick={() => jump(s.id)}>
+              {i > 0 && <span className="flow-arrow">›</span>}
+              <span className={`flow-step ${s.id === 'cook' ? 'hot' : ''}`}>{s.name}</span>
+            </button>
           ))}
-        </ul>
+        </nav>
 
-        <h2 className="serif section">步骤</h2>
-        <ol className="steps">
-          {r.steps.map((s, i) => (
-            <li key={i}>
-              <span className="step-no serif">{i + 1}</span>
-              <p>{s}</p>
-            </li>
-          ))}
-        </ol>
+        {r.ingredients.length > 0 && <>
+          <h2 id="ing" className="serif section"><span className="sec-no">{no('ing')}</span>食材</h2>
+          <Checklist list={r.ingredients} k="i" />
+        </>}
+
+        {r.seasonings.length > 0 && <>
+          <h2 id="sea" className="serif section"><span className="sec-no">{no('sea')}</span>调料</h2>
+          <Checklist list={r.seasonings} k="s" />
+        </>}
+
+        {r.sauce.length > 0 && <>
+          <h2 id="sau" className="serif section"><span className="sec-no">{no('sau')}</span>酱料<small>提前调好一碗</small></h2>
+          <div className="sauce-card">
+            <Checklist list={r.sauce} k="a" />
+            {r.sauceNote && <p className="sauce-note">🥣 {r.sauceNote}</p>}
+          </div>
+        </>}
+
+        {r.prep.length > 0 && <>
+          <h2 id="pre" className="serif section"><span className="sec-no">{no('pre')}</span>备菜处理</h2>
+          <Steps list={r.prep} k="p" tone="herb" />
+        </>}
+
+        {r.steps.length > 0 && <>
+          <h2 id="cook" className="serif section"><span className="sec-no hot">{no('cook')}</span>正式开做</h2>
+          <Steps list={r.steps} k="c" />
+        </>}
 
         <button
           className="link-danger"
