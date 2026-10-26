@@ -54,7 +54,7 @@ export default function Home() {
         <div className="grid">
           {list.map((r) => (
             <Link to={`/r/${r.id}`} key={r.id} className="card">
-              <Cover emoji={r.emoji} palette={r.palette} />
+              <Cover emoji={r.emoji} palette={r.palette} photo={r.photo} />
               <div className="card-body">
                 <h3 className="serif">{r.title}</h3>
                 <p className="muted tiny">{r.minutes} 分钟 · {r.author}</p>
