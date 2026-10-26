@@ -7,6 +7,7 @@ export type Recipe = {
   description: string
   emoji: string
   palette: number
+  photo?: string            // 成品图：public/ 下的相对路径，或以后的 Supabase Storage 地址
   servings: number
   minutes: number
   tags: string[]
