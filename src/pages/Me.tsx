@@ -26,7 +26,7 @@ export default function Me() {
         <button className="group-row as-btn"><span>修改密码</span><span className="muted">›</span></button>
         <button className="group-row as-btn danger" onClick={logout}><span>退出登录</span></button>
       </section>
-      <p className="muted tiny center">cookerY 原型 v0.1 · 数据暂存在本机</p>
+      <p className="muted tiny center">cookerY 原型 v0.2 · 数据暂存在本机</p>
     </main>
   )
 }
