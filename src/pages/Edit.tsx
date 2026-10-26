@@ -2,44 +2,72 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { ALL_TAGS } from '../lib/mock'
-import type { Ingredient, Recipe } from '../lib/types'
+import { emptyRecipe, type Ingredient, type Recipe } from '../lib/types'
 import { Cover, PALETTE_COUNT } from '../components/Cover'
+import { TopBar } from '../components/TopBar'
 
-const EMOJIS = ['🍳', '🍅', '🍗', '🥟', '🍜', '🍲', '🥗', '🍰', '🐟', '🥩', '🍄', '🥭']
+const EMOJIS = ['🍳', '🍅', '🍗', '🥢', '🥟', '🍜', '🍲', '🥗', '🍰', '🐟', '🥩', '🍄', '🥭']
+const blank = (): Ingredient => ({ name: '', amount: '', unit: '' })
+
+function IngEditor({ list, onChange, add, hint }: { list: Ingredient[]; onChange: (l: Ingredient[]) => void; add: string; hint: string }) {
+  return (
+    <div className="list-edit">
+      {list.map((g, i) => (
+        <div className="ing-row" key={i}>
+          <input className="grow" placeholder={hint} value={g.name} onChange={(e) => onChange(list.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+          <input className="amt" placeholder="用量" value={g.amount} onChange={(e) => onChange(list.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} />
+          <input className="unit" placeholder="单位" value={g.unit} onChange={(e) => onChange(list.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))} />
+          <button className="x" aria-label="删除" onClick={() => onChange(list.filter((_, j) => j !== i))}>×</button>
+        </div>
+      ))}
+      <button className="btn btn-ghost btn-block" onClick={() => onChange([...list, blank()])}>＋ {add}</button>
+    </div>
+  )
+}
+
+function StepEditor({ list, onChange, add, hint, tone }: { list: string[]; onChange: (l: string[]) => void; add: string; hint: string; tone?: string }) {
+  return (
+    <div className={`list-edit steps ${tone ?? ''}`}>
+      {list.map((s, i) => (
+        <div className="step-row" key={i}>
+          <span className="step-no serif">{i + 1}</span>
+          <textarea rows={2} className="grow" placeholder={hint} value={s} onChange={(e) => onChange(list.map((x, j) => (j === i ? e.target.value : x)))} />
+          <button className="x" aria-label="删除" onClick={() => onChange(list.filter((_, j) => j !== i))}>×</button>
+        </div>
+      ))}
+      <button className="btn btn-ghost btn-block" onClick={() => onChange([...list, ''])}>＋ {add}</button>
+    </div>
+  )
+}
 
 export default function Edit() {
   const { id } = useParams()
   const nav = useNavigate()
   const { recipes, save, user } = useStore()
   const existing = recipes.find((x) => x.id === id)
-  const [r, setR] = useState<Recipe>(
-    existing ?? {
-      id: `r${Date.now()}`, title: '', description: '', emoji: '🍳', palette: 0,
-      servings: 2, minutes: 20, tags: [], author: user ?? '我',
-      ingredients: [{ name: '', amount: '', unit: '' }], steps: [''], updatedAt: Date.now(),
-    },
-  )
-  const set = <K extends keyof Recipe>(k: K, v: Recipe[K]) => setR({ ...r, [k]: v })
-  const setIng = (i: number, patch: Partial<Ingredient>) =>
-    set('ingredients', r.ingredients.map((g, j) => (j === i ? { ...g, ...patch } : g)))
+  const [r, setR] = useState<Recipe>(existing ?? emptyRecipe(user ?? '我'))
+  const set = <K extends keyof Recipe>(k: K, v: Recipe[K]) => setR((cur) => ({ ...cur, [k]: v }))
 
   const submit = () => {
     if (!r.title.trim()) return alert('先给这道菜起个名字')
+    const clean = (l: Ingredient[]) => l.filter((g) => g.name.trim())
+    const cleanS = (l: string[]) => l.filter((s) => s.trim())
     save({
       ...r,
-      ingredients: r.ingredients.filter((g) => g.name.trim()),
-      steps: r.steps.filter((s) => s.trim()),
+      ingredients: clean(r.ingredients), seasonings: clean(r.seasonings), sauce: clean(r.sauce),
+      prep: cleanS(r.prep), steps: cleanS(r.steps),
     })
     nav(`/r/${r.id}`, { replace: true })
   }
 
   return (
     <main className="page edit">
-      <header className="edit-head">
-        <button className="text-btn" onClick={() => nav(-1)}>取消</button>
-        <h1 className="serif">{existing ? '编辑菜谱' : '记一道新菜'}</h1>
-        <button className="text-btn strong" onClick={submit}>保存</button>
-      </header>
+      <TopBar
+        solid
+        left={<button className="text-btn" onClick={() => nav(-1)}>取消</button>}
+        title={existing ? '编辑菜谱' : '记一道新菜'}
+        right={<button className="text-btn strong" onClick={submit}>保存</button>}
+      />
 
       <button className="cover-pick" onClick={() => set('palette', (r.palette + 1) % PALETTE_COUNT)}>
         <Cover emoji={r.emoji} palette={r.palette} size="hero" />
@@ -53,7 +81,7 @@ export default function Edit() {
 
       <label className="field">
         <span>菜名</span>
-        <input value={r.title} placeholder="比如：番茄炒蛋" onChange={(e) => set('title', e.target.value)} />
+        <input value={r.title} placeholder="比如：鱼香肉丝" onChange={(e) => set('title', e.target.value)} />
       </label>
       <label className="field">
         <span>一句话</span>
@@ -78,31 +106,28 @@ export default function Edit() {
         ))}
       </div>
 
-      <p className="label">食材</p>
-      <div className="list-edit">
-        {r.ingredients.map((g, i) => (
-          <div className="ing-row" key={i}>
-            <input className="grow" placeholder="食材" value={g.name} onChange={(e) => setIng(i, { name: e.target.value })} />
-            <input className="amt" placeholder="用量" value={g.amount} onChange={(e) => setIng(i, { amount: e.target.value })} />
-            <input className="unit" placeholder="单位" value={g.unit} onChange={(e) => setIng(i, { unit: e.target.value })} />
-            <button className="x" aria-label="删除" onClick={() => set('ingredients', r.ingredients.filter((_, j) => j !== i))}>×</button>
-          </div>
-        ))}
-        <button className="btn btn-ghost btn-block" onClick={() => set('ingredients', [...r.ingredients, { name: '', amount: '', unit: '' }])}>＋ 加一样食材</button>
-      </div>
+      <h2 className="serif section"><span className="sec-no">1</span>食材</h2>
+      <p className="muted tiny sec-tip">主料和配料：肉、菜、蛋、豆腐……</p>
+      <IngEditor list={r.ingredients} onChange={(l) => set('ingredients', l)} add="加一样食材" hint="食材" />
 
-      <p className="label">步骤</p>
-      <div className="list-edit">
-        {r.steps.map((s, i) => (
-          <div className="step-row" key={i}>
-            <span className="step-no serif">{i + 1}</span>
-            <textarea rows={2} className="grow" placeholder="这一步做什么" value={s}
-              onChange={(e) => set('steps', r.steps.map((x, j) => (j === i ? e.target.value : x)))} />
-            <button className="x" aria-label="删除" onClick={() => set('steps', r.steps.filter((_, j) => j !== i))}>×</button>
-          </div>
-        ))}
-        <button className="btn btn-ghost btn-block" onClick={() => set('steps', [...r.steps, ''])}>＋ 加一步</button>
-      </div>
+      <h2 className="serif section"><span className="sec-no">2</span>调料</h2>
+      <p className="muted tiny sec-tip">炒的时候直接下锅的：油、盐、豆瓣酱、姜蒜……</p>
+      <IngEditor list={r.seasonings} onChange={(l) => set('seasonings', l)} add="加一样调料" hint="调料" />
+
+      <h2 className="serif section"><span className="sec-no">3</span>酱料<small>可不填</small></h2>
+      <p className="muted tiny sec-tip">需要提前混合好的一碗汁，比如鱼香汁、糖醋汁</p>
+      <IngEditor list={r.sauce} onChange={(l) => set('sauce', l)} add="加一样到酱料里" hint="酱料成分" />
+      {r.sauce.length > 0 && (
+        <textarea rows={2} className="sauce-input" placeholder="怎么调：比如 全部搅匀，糖化开再用" value={r.sauceNote} onChange={(e) => set('sauceNote', e.target.value)} />
+      )}
+
+      <h2 className="serif section"><span className="sec-no">4</span>备菜处理</h2>
+      <p className="muted tiny sec-tip">开火前做完的：洗、切、腌、泡发、焯水</p>
+      <StepEditor list={r.prep} onChange={(l) => set('prep', l)} add="加一步备菜" hint="比如：里脊切丝，加盐和淀粉腌 10 分钟" tone="herb" />
+
+      <h2 className="serif section"><span className="sec-no hot">5</span>正式开做</h2>
+      <p className="muted tiny sec-tip">开火之后，一步一步来</p>
+      <StepEditor list={r.steps} onChange={(l) => set('steps', l)} add="加一步" hint="这一步做什么、火候、多久" />
       <div style={{ height: 40 }} />
     </main>
   )
