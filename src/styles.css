@@ -91,8 +91,6 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .hero { position: relative; }
 .hero .cover-hero { aspect-ratio: 1 / 0.85; }
 .icon-btn { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--card) 85%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: var(--shadow); }
-.hero-back { position: absolute; top: calc(var(--safe-t) + 14px); left: 16px; z-index: 2; }
-.hero-edit { position: absolute; top: calc(var(--safe-t) + 14px); right: 16px; z-index: 2; }
 .sheet { background: var(--paper); border-radius: 28px 28px 0 0; margin-top: -28px; position: relative; padding: 24px 20px 20px; }
 .title { font-size: 30px; margin: 0 0 8px; }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 10px; }
@@ -139,9 +137,7 @@ input:focus, textarea:focus { border-color: var(--tomato); box-shadow: 0 0 0 3px
 .login-form .btn { margin: 12px 0; }
 
 /* 编辑 */
-.edit-head { display: flex; align-items: center; justify-content: space-between; margin: 0 -4px 16px; position: sticky; top: 0; padding: calc(var(--safe-t) + 8px) 4px 8px; background: var(--paper); z-index: 5; }
-.edit-head h1 { font-size: 18px; margin: 0; }
-.edit.page { padding-top: 0; }
+.edit.page { padding-top: calc(var(--safe-t) + 76px); }
 .text-btn { font-size: 16px; color: var(--muted); padding: 8px; }
 .text-btn.strong { color: var(--tomato); font-weight: 700; }
 .cover-pick { width: 100%; border-radius: var(--r-lg); overflow: hidden; position: relative; display: block; box-shadow: var(--shadow); }
@@ -160,14 +156,13 @@ input:focus, textarea:focus { border-color: var(--tomato); box-shadow: 0 0 0 3px
 .x { width: 32px; height: 44px; color: var(--muted); font-size: 22px; flex: none; }
 
 /* 做菜模式 */
-.cook { min-height: 100dvh; display: flex; flex-direction: column; padding: calc(var(--safe-t) + 12px) 20px calc(20px + var(--safe-b)); }
-.cook-head { display: flex; align-items: center; justify-content: space-between; }
-.progress { height: 4px; background: var(--line); border-radius: 4px; margin: 16px 0; overflow: hidden; }
+.cook { min-height: 100dvh; display: flex; flex-direction: column; padding: calc(var(--safe-t) + 68px) 20px calc(104px + var(--safe-b)); }
+.progress { height: 4px; background: var(--line); border-radius: 4px; margin: 4px 0 16px; overflow: hidden; }
 .progress div { height: 100%; background: var(--tomato); transition: width .3s; }
 .cook-step { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .cook-no { font-size: 64px; color: var(--tomato); opacity: .9; }
-.cook-step p { font-size: 26px; line-height: 1.6; margin: 8px 0 0; font-weight: 600; }
-.cook-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+.cook-step p.serif { font-size: 26px; line-height: 1.6; margin: 8px 0 0; font-weight: 600; }
+.cook-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%; max-width: 520px; padding: 12px 20px calc(16px + var(--safe-b)); background: var(--paper); z-index: 10; }
 
 /* 我的 */
 .profile { display: flex; gap: 16px; align-items: center; background: var(--card); padding: 18px; border-radius: var(--r-lg); box-shadow: var(--shadow); }
@@ -179,3 +174,36 @@ input:focus, textarea:focus { border-color: var(--tomato); box-shadow: 0 0 0 3px
 .group-row:last-child { border-bottom: 0; }
 .group-row.danger { color: var(--tomato); }
 .profile + .group, .group + p { margin-top: 16px; }
+
+/* 固定顶栏：返回、编辑等按钮始终在原位，不随滚动 */
+.topbar { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 520px; height: calc(var(--safe-t) + 64px); padding: var(--safe-t) 14px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 30; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.topbar.solid { background: var(--paper); border-bottom: 1px solid var(--line); }
+.topbar-side { min-width: 64px; display: flex; align-items: center; }
+.topbar-side.right { justify-content: flex-end; }
+.topbar-title { font-size: 17px; margin: 0; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 流程：食材 › 调料 › 酱料 › 备菜 › 开做 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 18px 0 0; padding: 10px 12px; background: var(--card); border: 1px dashed var(--line); border-radius: var(--r-md); }
+.flow button { display: inline-flex; align-items: center; font-size: 14px; }
+.flow-arrow { color: var(--muted); margin: 0 4px; }
+.flow-step { padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--herb) 14%, transparent); color: var(--herb); }
+.flow-step.hot { background: var(--tomato-soft); color: var(--tomato); }
+.section { scroll-margin-top: calc(var(--safe-t) + 72px); }
+.section small { font-family: var(--sans); font-weight: 400; font-size: 12px; color: var(--muted); }
+.sec-no { width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; background: var(--herb); color: #fff; flex: none; }
+.sec-no.hot { background: var(--tomato); }
+.sec-tip { margin: -6px 0 10px; }
+.sauce-card .ingredients { border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.sauce-note { margin: 0; padding: 12px 16px; background: color-mix(in srgb, var(--herb) 10%, var(--card)); border-radius: 0 0 var(--r-lg) var(--r-lg); font-size: 15px; line-height: 1.6; box-shadow: var(--shadow); }
+.sauce-input { margin-top: 8px; }
+.steps li { cursor: pointer; }
+.steps li.checked p { opacity: .45; text-decoration: line-through; }
+.steps.herb .step-no { background: color-mix(in srgb, var(--herb) 16%, transparent); color: var(--herb); }
+.list-edit.steps { gap: 8px; display: grid; }
+
+/* 做菜模式阶段标记 */
+.phase { align-self: flex-start; font-size: 13px; padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--herb) 16%, transparent); color: var(--herb); font-weight: 600; }
+.phase.hot { background: var(--tomato-soft); color: var(--tomato); }
+.phase + .cook-no { margin-top: 8px; }
+.cook-extra { margin: 16px 0 0; font-size: 16px; color: var(--muted); background: var(--card); border: 1px dashed var(--line); border-radius: var(--r-md); padding: 10px 14px; line-height: 1.6; }
