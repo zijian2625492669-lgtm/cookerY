@@ -7,7 +7,15 @@ const PALETTES = [
   ['#D7C6E8', '#9479B8'],
 ]
 
-export function Cover({ emoji, palette, size = 'card' }: { emoji: string; palette: number; size?: 'card' | 'hero' }) {
+export function Cover({ emoji, palette, photo, size = 'card' }: { emoji: string; palette: number; photo?: string; size?: 'card' | 'hero' }) {
+  if (photo) {
+    const src = /^(https?:|data:|blob:)/.test(photo) ? photo : import.meta.env.BASE_URL + photo
+    return (
+      <div className={`cover cover-${size} has-photo`}>
+        <img src={src} alt="" loading="lazy" />
+      </div>
+    )
+  }
   const [a, b] = PALETTES[palette % PALETTES.length]
   return (
     <div className={`cover cover-${size}`} style={{ background: `radial-gradient(120% 90% at 30% 20%, ${a}, ${b})` }}>
