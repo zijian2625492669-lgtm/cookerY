@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { Recipe } from './types'
+import { normalize, type Recipe } from './types'
 import { MOCK } from './mock'
 
 // 原型阶段：数据存在 localStorage。接 Supabase 时只需替换这里的读写。
@@ -13,13 +13,13 @@ type Store = {
 }
 
 const Ctx = createContext<Store>(null as unknown as Store)
-const KEY = 'cookery.recipes.v1'
+const KEY = 'cookery.recipes.v2'
 const UKEY = 'cookery.user'
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
     const raw = localStorage.getItem(KEY)
-    return raw ? JSON.parse(raw) : MOCK
+    return raw ? (JSON.parse(raw) as Recipe[]).map(normalize) : MOCK
   })
   const [user, setUser] = useState<string | null>(() => localStorage.getItem(UKEY))
 
