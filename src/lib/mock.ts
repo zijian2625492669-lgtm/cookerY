@@ -7,6 +7,25 @@ const g = (name: string, amount = '', unit = '') => ({ name, amount, unit })
 
 export const MOCK: Recipe[] = [
   {
+    id: 'tangcu-paigu', title: '糖醋排骨', emoji: '🍖', palette: 0, photo: 'recipes/tangcu-paigu.jpg',
+    servings: 2, minutes: 50,
+    description: '冰糖炒糖色，再炖 30 分钟收汁，红亮挂汁、酸甜不腻。',
+    tags: ['家常', '下饭'], author: 'Zijian', updatedAt: now,
+    ingredients: [g('排骨', '适量'), g('葱段', '几段'), g('姜片', '几片')],
+    seasonings: [g('料酒', '适量', '（焯水用）'), g('食用油', '适量'), g('冰糖', '1', '小碗'), g('热水', '没过排骨'), g('熟白芝麻', '少许')],
+    sauce: [g('料酒', '1', '勺'), g('生抽', '2', '勺'), g('老抽', '1', '勺'), g('醋', '3', '勺'), g('白糖', '2', '勺'), g('水', '3', '勺')],
+    sauceNote: '全部倒进碗里搅匀，糖化开备用。',
+    prep: ['排骨洗净，冷水入锅，加葱姜、料酒焯水去血沫，捞出备用。', '调好糖醋汁备用。'],
+    steps: [
+      '油热放冰糖，小火炒至焦糖色。',
+      '放排骨，翻炒到每块都裹上糖色。',
+      '倒入糖醋汁，翻炒均匀。',
+      '倒热水没过排骨，盖上锅盖炖 30 分钟。',
+      '开盖大火收汁，汁浓稠发亮即可。',
+      '装盘，撒熟芝麻。',
+    ],
+  },
+  {
     id: 'r1', title: '番茄炒蛋', emoji: '🍅', palette: 0, servings: 2, minutes: 15,
     description: '酸甜软嫩，拌饭一绝。番茄先炒出汁是关键。',
     tags: ['家常', '快手', '下饭'], author: 'Zijian', updatedAt: now - 1000,
