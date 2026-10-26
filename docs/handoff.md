@@ -1,13 +1,13 @@
 # cookerY 工作存档 · 交接说明
 
-最后更新：2026-10-26。接着做之前先读这份，再看《规划书（定稿）》和《视觉基调说明》。
+最后更新：2026-10-26（v0.2）。接着做之前先读这份，再看《规划书（定稿）》和《视觉基调说明》。
 
 ## 1. 现在到哪了
 | 项目 | 状态 |
 |---|---|
 | 规划书 | 已定稿（Notion：规划 / cookerY 规划书（定稿）） |
 | 视觉基调 | 已确认（Notion：规划 / cookerY 视觉基调说明） |
-| 前端 UI 原型 v0.1 | 完成，已上线 |
+| 前端 UI 原型 v0.2 | 完成，已上线（v0.2：菜谱分 食材/调料/酱料/备菜/开做 五段；顶部按钮固定） |
 | Supabase 后端 | 未开始（项目已建，表还没建） |
 | 图片上传 | 未开始 |
 
@@ -37,6 +37,7 @@ src/
 │  └─ store.tsx          数据层：user、login、logout、recipes、save、remove
 ├─ components/
 │  ├─ Cover.tsx          渐变 + emoji 封面（6 种配色）
+│  ├─ TopBar.tsx         固定顶栏（返回/编辑/取消/保存），不随滚动
 │  └─ TabBar.tsx         悬浮底部导航 + 中间新建按钮
 └─ pages/
    ├─ Login.tsx          /login
@@ -69,8 +70,12 @@ src/
 | servings | recipes.servings | |
 | author | recipes.created_by → members.display_name | |
 | tags: string[] | tags + recipe_tags | |
-| ingredients[] | ingredients（按 position 排序） | |
-| steps: string[] | steps.content（按 position 排序） | 步骤图 image_path 以后再加 |
+| ingredients[] | ingredients，kind='main' | 食材：主料配料 |
+| seasonings[] | ingredients，kind='seasoning' | 调料：直接下锅 |
+| sauce[] | ingredients，kind='sauce' | 酱料：提前调好的碗汁 |
+| sauceNote | recipes.sauce_note text | 酱料怎么调 |
+| prep: string[] | steps，phase='prep' | 备菜处理 |
+| steps: string[] | steps，phase='cook' | 正式开做；步骤图 image_path 以后再加 |
 | updatedAt | recipes.updated_at | |
 | （无） | recipes.cover_path | 接图片上传时再用；没照片继续显示渐变封面 |
 
@@ -79,7 +84,17 @@ src/
 emoji text not null default '🍳',
 palette int not null default 0,
 minutes int,
+sauce_note text not null default '',
 ```
+ingredients 表加：`kind text not null default 'main' check (kind in ('main','seasoning','sauce'))`
+steps 表加：`phase text not null default 'cook' check (phase in ('prep','cook'))`
+两张表都按 (recipe_id, kind/phase, position) 排序读取。
+
+## 6.5 菜谱结构（v0.2 定下）
+一道菜分五段，详情页按这个顺序展示，空的段自动隐藏：
+1 食材 → 2 调料 → 3 酱料（可选，附“怎么调”） → 4 备菜处理 → 5 正式开做
+做菜模式：先走备菜（有酱料且备菜里没写“调”时自动补一步“调酱料”），切到开做时按钮显示“备好了，开火 🔥”；开做第一步下方提示本菜调料。
+用户之后会提供真实菜谱，按这五段录入。
 
 ## 7. 接下来按这个顺序做
 1. Supabase 里跑建表、RLS、存储 SQL（规划书第 4 节 + 上面的修正），建两个账号、写 members、关注册、配 URL
