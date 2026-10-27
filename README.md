@@ -29,3 +29,13 @@ npm test
 ```
 
 视觉基调与规划见 `docs/design.md`、`docs/plan.md`，当前进度见 `docs/handoff.md`。
+
+## 让 agent 添加社交图文菜谱
+
+见 [Agent 添加菜谱调用文档](docs/agent-add-recipe.md)。工具通过普通成员登录，使用与网页相同的接口直接写入现有数据，不需要为每道新菜修改代码或重新发布。
+
+```bash
+npm run recipe:add -- recipe-inputs/new-recipe.json --dry-run
+# 配置普通账号的 COOKERY_ACCOUNT / COOKERY_PASSWORD 后正式添加：
+npm run recipe:add -- recipe-inputs/new-recipe.json --cover recipe-inputs/cover.jpg
+```
