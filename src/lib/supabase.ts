@@ -5,8 +5,14 @@ export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL || 'https://jjgrnefvpqhthsobpkml.supabase.co',
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_gvB75uZDSwHb0JRf-BQJbg_s9D5FhyG',
 )
-export const usernameEmail = (name: string) => `${name.trim().toLowerCase()}@users.cookery.invalid`
-export const validUsername = (name: string) => /^[a-z0-9_]{3,24}$/.test(name.trim().toLowerCase())
+export const usernameEmail = (name: string) => {
+  const account = name.trim().toLowerCase()
+  return account.includes('@') ? account : `${account}@cook.com`
+}
+export const validUsername = (name: string) => {
+  const account = name.trim().toLowerCase()
+  return /^[a-z0-9_]{3,24}$/.test(account) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account)
+}
 export function errorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String((error as { message?: string })?.message || error)
   if (/Invalid login credentials/i.test(message)) return '账号或密码不对，再试一次'

@@ -21,8 +21,10 @@ export default function Me() {
     if (password !== repeat) return setError('两次新密码没有对上')
     if (new TextEncoder().encode(password).length > 72) return setError('新密码请不超过 72 字节')
     void act(async () => {
-      const member = members.find((m) => m.user_id === userId)!
-      const { error: authError } = await supabase.auth.signInWithPassword({ email: `${member.username}@users.cookery.invalid`, password: current })
+      const { data, error: userError } = await supabase.auth.getUser()
+      if (userError) throw userError
+      if (!data.user.email) throw new Error('暂时找不到登录账号，请重新登录后再试')
+      const { error: authError } = await supabase.auth.signInWithPassword({ email: data.user.email, password: current })
       if (authError) throw authError
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error

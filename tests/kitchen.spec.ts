@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 
 const uid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const rid = '11111111-1111-4111-8111-111111111111'
-const user = { id: uid, aud: 'authenticated', role: 'authenticated', email: 'cook_one@users.cookery.invalid', app_metadata: { provider: 'email' }, user_metadata: {}, created_at: new Date().toISOString() }
+const user = { id: uid, aud: 'authenticated', role: 'authenticated', email: 'shared_cook@cook.com', app_metadata: { provider: 'email' }, user_metadata: {}, created_at: new Date().toISOString() }
 const token = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ sub: uid, role: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url')}.test`
 const session = { access_token: token, refresh_token: 'test-refresh', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, token_type: 'bearer', user }
 const recipe = () => ({ id: rid, created_by: uid, title: '番茄炒蛋', description: '简单好吃', emoji: '🍳', palette: 0, minutes: 15, servings: 2, sauce_note: '', cover_path: null, local_photo: null, updated_at: new Date().toISOString(), ingredients: [{ name: '鸡蛋', amount: '2', unit: '个', kind: 'main', position: 0 }], steps: [{ phase: 'cook', position: 0, content: '炒熟' }], recipe_tags: [{ tags: { name: '家常' } }] })
@@ -14,6 +14,7 @@ async function kitchen(page: Page, loggedIn = true) {
   let saved: Record<string, unknown> | null = null
   let uploads = 0
   let login: Record<string, unknown> | null = null
+  let logoutScope: string | null = null
   await page.addInitScript(({ session, loggedIn }) => {
     localStorage.setItem('cookery.user', '旧原型用户')
     if (loggedIn) localStorage.setItem('sb-jjgrnefvpqhthsobpkml-auth-token', JSON.stringify(session))
@@ -29,8 +30,8 @@ async function kitchen(page: Page, loggedIn = true) {
       return body.password === 'wrong' ? send({ message: 'Invalid login credentials', error_code: 'invalid_credentials' }, 400) : send(session)
     }
     if (path === '/auth/v1/user') return send(user)
-    if (path === '/auth/v1/logout') return send({})
-    if (path === '/rest/v1/members') return send([{ user_id: uid, username: 'cook_one', display_name: '甲' }, { user_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', username: 'cook_two', display_name: '乙' }])
+    if (path === '/auth/v1/logout') { logoutScope = new URL(request.url()).searchParams.get('scope'); return send({}) }
+    if (path === '/rest/v1/members') return send([{ user_id: uid, username: 'shared_cook', display_name: '甲' }, { user_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', username: 'cook_two', display_name: '乙' }])
     if (path === '/rest/v1/tags') return send([{ name: '家常' }, { name: '快手' }])
     if (path === '/rest/v1/recipes' && request.method() === 'DELETE') {
       if (failDelete) return send({ message: '暂时无法删除' }, 500)
@@ -49,18 +50,19 @@ async function kitchen(page: Page, loggedIn = true) {
     if (path.startsWith('/storage/v1/object/sign/recipe-images/')) return send({ signedURL: `${path}?token=test` })
     return send({})
   })
-  return { failSave: (value: boolean) => { failSave = value }, failDelete: (value: boolean) => { failDelete = value }, saved: () => saved, uploads: () => uploads, login: () => login }
+  return { failSave: (value: boolean) => { failSave = value }, failDelete: (value: boolean) => { failDelete = value }, saved: () => saved, uploads: () => uploads, login: () => login, logoutScope: () => logoutScope }
 }
 
 test('old prototype user cannot bypass login; custom account maps internally and reports wrong password', async ({ page }) => {
   const mock = await kitchen(page, false)
   await page.goto('./')
   await expect(page.getByRole('heading', { name: 'cookerY' })).toBeVisible()
-  await page.getByLabel('账号', { exact: true }).fill('cook_one')
+  await page.getByLabel('账号', { exact: true }).fill('shared_cook')
   await page.getByLabel('密码', { exact: true }).fill('wrong')
   await page.getByRole('button', { name: '进厨房', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('账号或密码不对')
-  expect(mock.login()?.email).toBe('cook_one@users.cookery.invalid')
+  expect(mock.login()?.email).toBe('shared_cook@cook.com')
+  await page.getByLabel('账号', { exact: true }).fill('SHARED_COOK@COOK.COM')
   await page.getByLabel('密码', { exact: true }).fill('valid-password')
   await page.getByRole('button', { name: '进厨房', exact: true }).click()
   await expect(page.getByRole('heading', { name: '我们的菜谱' })).toBeVisible()
@@ -112,4 +114,13 @@ test('failed deletion keeps the detail visible and can be retried', async ({ pag
   await page.getByRole('button', { name: '删除这道菜' }).click()
   await expect(page.getByRole('heading', { name: '我们的菜谱' })).toBeVisible()
   await expect(page.getByText('还没有这道菜')).toBeVisible()
+})
+
+
+test('shared account logout only ends this device session', async ({ page }) => {
+  const mock = await kitchen(page)
+  await page.goto('./#/me')
+  await page.getByRole('button', { name: '退出登录' }).click()
+  await expect(page.getByRole('heading', { name: 'cookerY', exact: true })).toBeVisible()
+  expect(mock.logoutScope()).toBe('local')
 })

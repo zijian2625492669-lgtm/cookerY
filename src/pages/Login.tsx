@@ -21,7 +21,7 @@ export default function Login() {
     <h1 className="serif login-title">cookerY</h1>
     <p className="muted login-sub">我们俩的厨房手账</p>
     <form onSubmit={submit} className="login-form">
-      <label className="field"><span>账号</span><input required autoCapitalize="none" autoComplete="username" placeholder="你的厨房账号" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
+      <label className="field"><span>账号</span><input required autoCapitalize="none" autoComplete="username" placeholder="邮箱或账号" value={username} onChange={(e) => setUsername(e.target.value)} /></label>
       <label className="field"><span>密码</span><input required type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} /></label>
       {error && <p className="notice" role="alert">{error}</p>}
       <button className="btn btn-primary btn-block" type="submit" disabled={busy}>{busy ? '正在进厨房…' : '进厨房'}</button>

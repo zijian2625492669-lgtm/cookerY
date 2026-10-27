@@ -78,13 +78,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     user: member?.display_name ?? null, userId: member?.user_id ?? null,
     loading: !authReady || (!!sessionId && loadedFor !== sessionId), error, members, tags, recipes, refresh,
     login: async (username, password) => {
-      if (!validUsername(username)) throw new Error('账号用 3–24 位字母、数字或下划线')
+      if (!validUsername(username)) throw new Error('填一下邮箱，或 3–24 位字母、数字和下划线组成的账号')
       setError('')
       const { error } = await supabase.auth.signInWithPassword({ email: usernameEmail(username), password })
       if (error) throw error
     },
     logout: async () => {
-      const { error } = await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
       if (error) throw error
       ++epoch.current; setRecipes([]); setMembers([]); setTags([]); setError('')
     },
