@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import { ALL_TAGS } from '../lib/mock'
 import { Cover } from '../components/Cover'
 
 function greet() {
@@ -13,7 +12,7 @@ function greet() {
 }
 
 export default function Home() {
-  const { recipes, user } = useStore()
+  const { recipes, user, tags } = useStore()
   const [q, setQ] = useState('')
   const [tag, setTag] = useState<string | null>(null)
 
@@ -40,7 +39,7 @@ export default function Home() {
 
       <div className="chips" role="tablist">
         <button className={`chip ${!tag ? 'on' : ''}`} onClick={() => setTag(null)}>全部</button>
-        {ALL_TAGS.map((t) => (
+        {tags.map((t) => (
           <button key={t} className={`chip ${tag === t ? 'on' : ''}`} onClick={() => setTag(tag === t ? null : t)}>{t}</button>
         ))}
       </div>
