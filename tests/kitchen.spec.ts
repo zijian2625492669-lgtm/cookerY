@@ -124,3 +124,111 @@ test('shared account logout only ends this device session', async ({ page }) => 
   await expect(page.getByRole('heading', { name: 'cookerY', exact: true })).toBeVisible()
   expect(mock.logoutScope()).toBe('local')
 })
+
+async function mockWakeLock(page: Page, mode: 'normal' | 'delayed' | 'denied' | 'unsupported' = 'normal') {
+  await page.addInitScript((mode) => {
+    const state = { requests: 0, active: 0, visibility: 'visible', pending: [] as (() => void)[] }
+    Object.assign(window, { wakeLockTest: state })
+    Object.defineProperty(document, 'visibilityState', { get: () => state.visibility, configurable: true })
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: {
+        request: async (type: string) => {
+          if (type !== 'screen') throw new Error('Expected a screen wake lock')
+          state.requests++
+          if (mode === 'denied' && state.requests === 1) throw new DOMException('Denied', 'NotAllowedError')
+          if (mode === 'delayed') await new Promise<void>((resolve) => state.pending.push(resolve))
+          state.active++
+          const sentinel = {
+            released: false,
+            release: async () => {
+              if (!sentinel.released) { sentinel.released = true; state.active-- }
+            },
+          }
+          document.addEventListener('visibilitychange', () => {
+            if (state.visibility === 'hidden') void sentinel.release()
+          })
+          return sentinel
+        },
+      },
+    })
+    if (mode === 'unsupported') {
+      delete (navigator as any).wakeLock
+      delete (Navigator.prototype as any).wakeLock
+    }
+  }, mode)
+}
+
+async function wakeLockState(page: Page) {
+  return page.evaluate(() => {
+    const state = (window as any).wakeLockTest
+    return { requests: state.requests, active: state.active }
+  })
+}
+
+async function visibility(page: Page, value: 'hidden' | 'visible') {
+  await page.evaluate((value) => {
+    ;(window as any).wakeLockTest.visibility = value
+    document.dispatchEvent(new Event('visibilitychange'))
+  }, value)
+}
+
+test('cooking reacquires screen wake lock after every return and releases on exit', async ({ page }) => {
+  await kitchen(page)
+  await mockWakeLock(page)
+  await page.goto(`./#/r/${rid}`)
+  await page.getByRole('link', { name: '开始做菜', exact: true }).click()
+  await expect.poll(() => wakeLockState(page)).toMatchObject({ active: 1 })
+  for (let i = 0; i < 3; i++) {
+    const before = await wakeLockState(page)
+    await visibility(page, 'hidden')
+    await expect.poll(() => wakeLockState(page)).toEqual({ requests: before.requests, active: 0 })
+    await visibility(page, 'visible')
+    await expect.poll(() => wakeLockState(page)).toEqual({ requests: before.requests + 1, active: 1 })
+    await visibility(page, 'visible')
+    await page.evaluate(() => window.dispatchEvent(new Event('pageshow')))
+    expect(await wakeLockState(page)).toEqual({ requests: before.requests + 1, active: 1 })
+  }
+  await page.getByRole('button', { name: '退出', exact: true }).click()
+  await expect.poll(() => wakeLockState(page)).toMatchObject({ active: 0 })
+  const after = await wakeLockState(page)
+  await visibility(page, 'hidden')
+  await visibility(page, 'visible')
+  expect(await wakeLockState(page)).toEqual(after)
+})
+
+test('late wake lock grants are released after leaving cooking mode', async ({ page }) => {
+  await kitchen(page)
+  await mockWakeLock(page, 'delayed')
+  await page.goto(`./#/r/${rid}`)
+  await page.getByRole('link', { name: '开始做菜', exact: true }).click()
+  await expect.poll(async () => (await wakeLockState(page)).requests).toBeGreaterThan(0)
+  await page.getByRole('button', { name: '退出', exact: true }).click()
+  await expect(page.getByRole('link', { name: '开始做菜', exact: true })).toBeVisible()
+  const result = await page.evaluate(async () => {
+    const state = (window as any).wakeLockTest
+    state.pending.splice(0).forEach((resolve: () => void) => resolve())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    return state.active
+  })
+  expect(result).toBe(0)
+})
+
+for (const mode of ['denied', 'unsupported'] as const) {
+  test(`cooking still works when screen wake lock is ${mode}`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await kitchen(page)
+    await mockWakeLock(page, mode)
+    await page.goto(`./#/r/${rid}`)
+    await page.getByRole('link', { name: '开始做菜', exact: true }).click()
+    await expect(page.locator('.cook-step')).toContainText('炒熟')
+    await visibility(page, 'hidden')
+    await visibility(page, 'visible')
+    if (mode === 'denied') await expect.poll(() => wakeLockState(page)).toMatchObject({ active: 1 })
+    else expect(await wakeLockState(page)).toEqual({ requests: 0, active: 0 })
+    await page.getByRole('button', { name: '完成 🎉' }).click()
+    await expect(page.getByRole('link', { name: '开始做菜', exact: true })).toBeVisible()
+    expect(errors).toEqual([])
+  })
+}

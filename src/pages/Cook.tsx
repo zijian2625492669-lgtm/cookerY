@@ -13,10 +13,36 @@ export default function Cook() {
   const [i, setI] = useState(0)
 
   useEffect(() => {
-    let lock: any
-    const n = navigator as any
-    n.wakeLock?.request?.('screen').then((l: any) => (lock = l)).catch(() => {})
-    return () => lock?.release?.()
+    if (!('wakeLock' in navigator)) return
+    let lock: WakeLockSentinel | null = null
+    let disposed = false
+    let pending = false
+
+    const acquire = async () => {
+      if (disposed || document.visibilityState !== 'visible' || pending || (lock && !lock.released)) return
+      pending = true
+      try {
+        const next = await navigator.wakeLock.request('screen')
+        // 申请期间可能已退出做菜模式或切到后台，不能留下常亮锁。
+        if (disposed || document.visibilityState !== 'visible') await next.release()
+        else lock = next
+      } catch {
+        // 浏览器不允许常亮时仍可做菜，下次回到前台再试。
+      } finally {
+        pending = false
+      }
+    }
+
+    // 切到其他 App 后浏览器会释放常亮锁，回来时需要重新申请。
+    document.addEventListener('visibilitychange', acquire)
+    window.addEventListener('pageshow', acquire)
+    void acquire()
+    return () => {
+      disposed = true
+      document.removeEventListener('visibilitychange', acquire)
+      window.removeEventListener('pageshow', acquire)
+      void lock?.release().catch(() => {})
+    }
   }, [])
 
   const cards = useMemo<Card[]>(() => {
