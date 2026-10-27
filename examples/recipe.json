@@ -1,0 +1,24 @@
+{
+  "importKey": "example-only:tomato-eggs:v1",
+  "title": "番茄炒蛋（调用示例）",
+  "description": "这是接口格式示例，不代表用户提供的真实菜谱；正式调用前请替换内容、来源和导入标识。",
+  "emoji": "🍅",
+  "palette": 0,
+  "minutes": 15,
+  "servings": 2,
+  "tags": ["家常", "快手"],
+  "ingredients": [
+    { "name": "番茄", "amount": "2", "unit": "个" },
+    { "name": "鸡蛋", "amount": "3", "unit": "个" }
+  ],
+  "seasonings": [
+    { "name": "食用油", "amount": "适量", "unit": "" },
+    { "name": "盐", "amount": "适量", "unit": "" }
+  ],
+  "sauce": [],
+  "sauceNote": "",
+  "prep": ["番茄洗净切块。", "鸡蛋打散。"],
+  "steps": ["热锅放油，倒入蛋液炒凝固后盛出。", "炒软番茄，倒回鸡蛋，加盐翻炒均匀。"],
+  "sourceUrl": "https://example.com/recipe-post",
+  "sourceAuthor": "示例作者"
+}

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "playwright test",
+    "recipe:add": "node scripts/add-recipe.mjs",
+    "test:import": "node --test tests/recipe-import.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
