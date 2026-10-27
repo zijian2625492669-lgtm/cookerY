@@ -4,6 +4,7 @@ import { useStore } from '../lib/store'
 import { Cover } from '../components/Cover'
 import { TopBar, BackIcon, EditIcon } from '../components/TopBar'
 import type { Ingredient } from '../lib/types'
+import { errorMessage } from '../lib/supabase'
 
 export default function Detail() {
   const { id } = useParams()
@@ -11,6 +12,8 @@ export default function Detail() {
   const { recipes, remove } = useStore()
   const r = recipes.find((x) => x.id === id)
   const [done, setDone] = useState<Set<string>>(new Set())
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   if (!r) return <main className="page"><p>找不到这道菜</p></main>
 
   const toggle = (k: string) =>
@@ -65,6 +68,7 @@ export default function Detail() {
       </div>
 
       <section className="sheet">
+        {error && <p className="notice" role="alert">{error}</p>}
         <h1 className="serif title">{r.title}</h1>
         <p className="muted">{r.description}</p>
         <div className="meta">
@@ -113,13 +117,15 @@ export default function Detail() {
 
         <button
           className="link-danger"
-          onClick={() => {
+          disabled={busy}
+          onClick={async () => {
             if (confirm(`删除「${r.title}」？`)) {
-              remove(r.id)
-              nav('/', { replace: true })
+              setBusy(true); setError('')
+              try { await remove(r.id); nav('/', { replace: true }) }
+              catch (cause) { setError(errorMessage(cause)); setBusy(false) }
             }
           }}
-        >删除这道菜</button>
+        >{busy ? '正在删除…' : '删除这道菜'}</button>
       </section>
 
       <div className="bottom-bar">

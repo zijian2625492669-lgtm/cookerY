@@ -1,8 +1,10 @@
 export type Ingredient = { name: string; amount: string; unit: string }
 
-// 一道菜分四段：食材 → 调料 → 酱料（提前调好） → 备菜处理 → 正式开做
+// 一道菜分五段：食材 → 调料 → 酱料（提前调好） → 备菜处理 → 正式开做
 export type Recipe = {
   id: string
+  draftId?: string
+  version?: string
   title: string
   description: string
   emoji: string
@@ -12,6 +14,9 @@ export type Recipe = {
   minutes: number
   tags: string[]
   author: string
+  authorId?: string
+  coverPath?: string
+  localPhoto?: string
   ingredients: Ingredient[] // 主料、配料
   seasonings: Ingredient[]  // 调料：直接下锅的盐、糖、生抽……
   sauce: Ingredient[]       // 酱料：提前混合好的碗汁
@@ -22,7 +27,7 @@ export type Recipe = {
 }
 
 export const emptyRecipe = (author: string): Recipe => ({
-  id: `r${Date.now()}`, title: '', description: '', emoji: '🍳', palette: 0,
+  id: '', draftId: crypto.randomUUID(), title: '', description: '', emoji: '🍳', palette: 0,
   servings: 2, minutes: 20, tags: [], author,
   ingredients: [{ name: '', amount: '', unit: '' }],
   seasonings: [{ name: '', amount: '', unit: '' }],

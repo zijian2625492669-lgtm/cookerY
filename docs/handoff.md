@@ -3,13 +3,17 @@
 最后更新：2026-10-26（v0.2）。接着做之前先读这份，再看《规划书（定稿）》和《视觉基调说明》。
 
 ## 1. 现在到哪了
+最后更新：2026-10-27。v0.2 后端接入已完成开发，账号启用与生产部署待验收。
+
 | 项目 | 状态 |
 |---|---|
-| 规划书 | 已定稿（Notion：规划 / cookerY 规划书（定稿）） |
-| 视觉基调 | 已确认（Notion：规划 / cookerY 视觉基调说明） |
-| 前端 UI 原型 v0.2 | 完成，已上线（v0.2：菜谱分 食材/调料/酱料/备菜/开做 五段；顶部按钮固定） |
-| Supabase 后端 | 未开始（项目已建，表还没建） |
-| 图片上传 | 未开始 |
+| 前端 UI v0.2 | 保留五段菜谱、固定顶栏、做菜模式、手机布局 |
+| Supabase 数据库 | 已建立 6 张业务表、成员 RLS、事务保存 RPC、创建人保护、同时编辑检测 |
+| 登录与同步 | 已接真实 Auth，账号 + 密码，无需真实邮箱；支持退出、改密、定期刷新 |
+| 封面上传 | 已接压缩上传、私有桶、签名地址、旧封面清理；步骤图待后续 |
+| 旧数据 | 「我的」可导入本机旧菜谱，保留原数据，重复 ID 不覆盖云端 |
+| 两位账号 | 未创建；需管理端自动确认并加入 members，见 docs/setup.md |
+| 验证 | 构建通过；真实数据库事务验证通过；浏览器模拟 API 测试见 tests/ |
 
 ## 2. 关键地址
 - 仓库：github.com/zijian2625492669-lgtm/cookerY（main 分支）
@@ -19,7 +23,7 @@
 
 ## 3. 已定决策（别再改，除非有新理由）
 - 技术：Vite + React 18 + TypeScript + React Router 6（HashRouter），纯 CSS 变量，不用 Tailwind
-- 登录：邮箱 + 密码；关闭公开注册；两人共用，members 白名单
+- 登录：自定账号 + 密码，无需真实邮箱；后台内部标识为 `<username>@users.cookery.invalid`；两人共用，members 白名单
 - 权限：两人都能看、改全部菜谱，记录创建人
 - 部署：GitHub Pages，`vite.config.ts` 的 base 是 `/cookerY/`
 - 不用网络字体、不放外链图片（国内访问）
@@ -49,15 +53,14 @@ src/
 ```
 路由和规划书里写的略有不同，以代码为准：详情是 `/r/:id`，新建是 `/new`，“我的”是 `/me`。
 
-## 5. 数据层：接后端只改一个地方
-页面只通过 `useStore()` 拿数据，现在 `store.tsx` 读写的是 localStorage。接 Supabase 时：
-1. `login(email)` → `supabase.auth.signInWithPassword({ email, password })`（页面要把密码也传进来）
-2. `logout()` → `supabase.auth.signOut()`
-3. `user` → 来自 `onAuthStateChange` 的 session，再查 members 拿 display_name
-4. `recipes` → 启动时查 recipes + ingredients + steps + recipe_tags(tags)，拼成现有的 Recipe 类型
-5. `save(r)` → upsert recipes；ingredients、steps、recipe_tags 先删后插
-6. `remove(id)` → delete recipes（子表级联）
-建议把 save / remove 改成 async，页面上加“保存中”状态。
+## 5. 数据层
+页面通过 `useStore()` 读写数据：
+- `src/lib/supabase.ts`：公开客户端配置和账号转换，不含管理员密钥。
+- `src/lib/api.ts`：读取菜谱、成员、标签；`save_recipe` RPC 在单个事务中保存五段内容和标签。
+- `src/lib/images.ts`：压缩、私有桶上传、删除图片。
+- `src/lib/store.tsx`：真实 Auth 会话、成员校验、30 秒刷新、异步保存和本机旧菜谱导入。
+
+新菜谱由数据库生成 UUID（草稿携带稳定 UUID 以支持保存重试）。未成功保存的编辑内容留在当前页面。创建人由数据库确定，另一成员编辑不会改写创建人。重复导入依据 legacy_id 跳过，不覆盖已有数据。原型 localStorage 数据不再自动用作云端列表。
 
 ## 6. 前端类型 ↔ 数据库字段（以原型为准，修正规划书）
 | 前端 Recipe | 数据库 | 说明 |
@@ -97,13 +100,12 @@ steps 表加：`phase text not null default 'cook' check (phase in ('prep','cook
 用户之后会提供真实菜谱，按这五段录入。
 
 ## 7. 接下来按这个顺序做
-1. Supabase 里跑建表、RLS、存储 SQL（规划书第 4 节 + 上面的修正），建两个账号、写 members、关注册、配 URL
-2. 仓库 Settings → Secrets and variables → Actions → Variables 加 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`
-3. `npm i @supabase/supabase-js`，新建 `src/lib/supabase.ts`
-4. 改 `store.tsx`（第 5 节），登录页把密码传进去，去掉“随便填就能进”
-5. 标签列表从 tags 表读，不再用 ALL_TAGS 常量；成员从 members 表读，不再用 MEMBERS
-6. 图片上传（封面先做，步骤图后做）
-7. 打磨：加载中、错误提示、离线时的提示
+1. 按 `docs/setup.md` 在 Supabase 后台创建两个账号，勾自动确认，写入 members，并关闭公开注册。无需真实邮箱。
+2. 合并代码后等待 GitHub Pages 部署，实测两个账号登录、互相编辑、封面上传和修改密码。
+3. 在保存过原型数据的浏览器，通过「我的 → 导入本机旧菜谱」迁入云端。
+4. 后续再做步骤图、离线提示和冲突提示。
+
+完整空库结构在 `supabase/schema.sql`，真实数据库已应用。不再需要运行旧规划书的 SQL；当前实现新增了 kind、phase、sauce_note、legacy_id 与创建人保护。
 
 ## 8. 本地开发
 ```bash

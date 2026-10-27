@@ -212,3 +212,17 @@ input:focus, textarea:focus { border-color: var(--tomato); box-shadow: 0 0 0 3px
 .cover.has-photo { background: var(--line); }
 .cover.has-photo::after { display: none; }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 共用厨房：表单、连接状态和一次性成员设置 */
+.notice { padding: 12px 16px; border: 1px dashed var(--tomato); border-radius: 14px; color: var(--tomato); background: var(--card); overflow-wrap: anywhere; }
+.notice button { margin-left: 8px; min-height: 44px; text-decoration: underline; }
+.sync-notice { position: sticky; top: 0; z-index: 40; margin: 8px; }
+.settings-form { display: grid; gap: 16px; margin-top: 24px; }
+.settings-form fieldset { border: 1px dashed var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 16px; }
+.settings-form legend { padding: 0 8px; font-size: 20px; }
+.edit-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
+.new-tag { display: flex; gap: 8px; margin: 12px 0 24px; }
+.new-tag input { flex: 1; min-width: 0; }
+.new-tag button { flex: none; }
+button:disabled, fieldset:disabled { opacity: .6; cursor: wait; }
+.setup-page { padding-bottom: 40px; }
