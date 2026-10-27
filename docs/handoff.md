@@ -1,6 +1,6 @@
 # cookerY 工作存档 · 交接说明
 
-最后更新：2026-10-26（v0.2）。接着做之前先读这份，再看《规划书（定稿）》和《视觉基调说明》。
+最后更新：2026-10-27（v0.2 后端接入）。接着做之前先读这份，再看《规划书（定稿）》和《视觉基调说明》。
 
 ## 1. 现在到哪了
 最后更新：2026-10-27。v0.2 后端接入已完成开发，账号启用与生产部署待验收。
@@ -37,7 +37,10 @@ src/
 ├─ styles.css            全部样式；顶部 CSS 变量就是视觉基调
 ├─ lib/
 │  ├─ types.ts           Recipe / Ingredient 类型
-│  ├─ mock.ts            假数据、标签列表 ALL_TAGS、成员 MEMBERS
+│  ├─ mock.ts            保留的原型示例（不再作为云端数据源）
+│  ├─ supabase.ts        公开客户端配置、账号转换
+│  ├─ api.ts             读写 API 和事务保存
+│  ├─ images.ts          压缩上传、签名地址和清理
 │  └─ store.tsx          数据层：user、login、logout、recipes、save、remove
 ├─ components/
 │  ├─ Cover.tsx          渐变 + emoji 封面（6 种配色）
@@ -60,15 +63,15 @@ src/
 - `src/lib/images.ts`：压缩、私有桶上传、删除图片。
 - `src/lib/store.tsx`：真实 Auth 会话、成员校验、30 秒刷新、异步保存和本机旧菜谱导入。
 
-新菜谱由数据库生成 UUID（草稿携带稳定 UUID 以支持保存重试）。未成功保存的编辑内容留在当前页面。创建人由数据库确定，另一成员编辑不会改写创建人。重复导入依据 legacy_id 跳过，不覆盖已有数据。原型 localStorage 数据不再自动用作云端列表。
+新菜谱使用草稿生成的稳定 UUID，以支持保存重试；导入旧菜谱时由数据库生成 UUID。未成功保存的编辑内容留在当前页面。创建人由数据库确定，另一成员编辑不会改写创建人。重复导入依据 legacy_id 跳过，不覆盖已有数据。原型 localStorage 数据不再自动用作云端列表。
 
 ## 6. 前端类型 ↔ 数据库字段（以原型为准，修正规划书）
 | 前端 Recipe | 数据库 | 说明 |
 |---|---|---|
-| id | recipes.id (uuid) | 新建时前端现在用 `r+时间戳`，接库后改用数据库生成的 uuid |
+| id | recipes.id (uuid) | 新菜谱使用稳定 UUID，旧原型 ID 存到 legacy_id 用于去重 |
 | title / description | recipes.title / description | |
-| emoji | recipes.emoji text 默认 '🍳' | 规划书里没有，需新增 |
-| palette | recipes.palette int 默认 0 | 规划书里没有，需新增 |
+| emoji | recipes.emoji text 默认 '🍳' | 已新增，兼容原型样式 |
+| palette | recipes.palette int 默认 0 | 已新增，兼容原型样式 |
 | minutes | recipes.minutes int | 原型只用一个总时长，替代规划书的 prep_min / cook_min |
 | servings | recipes.servings | |
 | author | recipes.created_by → members.display_name | |
@@ -80,9 +83,11 @@ src/
 | prep: string[] | steps，phase='prep' | 备菜处理 |
 | steps: string[] | steps，phase='cook' | 正式开做；步骤图 image_path 以后再加 |
 | updatedAt | recipes.updated_at | |
-| （无） | recipes.cover_path | 接图片上传时再用；没照片继续显示渐变封面 |
+| coverPath / photo | recipes.cover_path | 存储路径 / 临时签名地址；无照片显示渐变封面 |
+| localPhoto | recipes.local_photo | 保留内置糖醋排骨照片路径 |
+| version | recipes.updated_at | 原始时间戳，用于检测过期编辑 |
 
-所以执行规划书 4.1 的建表 SQL 时，recipes 表改成：去掉 prep_min、cook_min，加上
+以下为相对旧规划书的结构变化，已经应用，无需再执行旧建表 SQL。recipes 表以 minutes 替代 prep_min、cook_min，并增加：
 ```sql
 emoji text not null default '🍳',
 palette int not null default 0,
@@ -103,7 +108,7 @@ steps 表加：`phase text not null default 'cook' check (phase in ('prep','cook
 1. 按 `docs/setup.md` 在 Supabase 后台创建两个账号，勾自动确认，写入 members，并关闭公开注册。无需真实邮箱。
 2. 合并代码后等待 GitHub Pages 部署，实测两个账号登录、互相编辑、封面上传和修改密码。
 3. 在保存过原型数据的浏览器，通过「我的 → 导入本机旧菜谱」迁入云端。
-4. 后续再做步骤图、离线提示和冲突提示。
+4. 后续再做步骤图和离线体验打磨；同时编辑已通过版本检查提示。
 
 完整空库结构在 `supabase/schema.sql`，真实数据库已应用。不再需要运行旧规划书的 SQL；当前实现新增了 kind、phase、sauce_note、legacy_id 与创建人保护。
 
